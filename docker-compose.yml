@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-
   pretix:
     image: 'pretix/standalone:stable'
     container_name: pretix.service
@@ -18,36 +17,6 @@ services:
     sysctls:
       - net.core.somaxconn=4096
     networks:
-      - stack_network
-
-  nginx:
-    image: nginx
-    container_name: pretix.nginx
-    restart: always
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - /var/nginx:/etc/nginx/conf.d
-      - /var/certbot/conf:/etc/letsencrypt
-      - /var/certbot/www:/var/www/certbot
-    environment:
-      - NGINX_HOST=events.pocketful.info
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-    networks: 
-      - web
-      - stack_network
-  
-  certbot:
-    image: certbot/certbot
-    container_name: pretix.certbot
-    restart: unless-stopped
-    volumes:
-      - /var/certbot/conf:/etc/letsencrypt
-      - /var/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-    networks:
-      - web
       - stack_network
 
   db:
@@ -74,7 +43,5 @@ services:
       - stack_network
 
 networks: 
-  web:
-    external: true
   stack_network:
     external: false
