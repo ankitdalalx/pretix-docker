@@ -13,9 +13,6 @@ services:
     volumes:
       - /var/pretix-data:/data
       - /etc/pretix:/etc/pretix
-      - /var/run/redis:/var/run/redis
-    sysctls:
-      - net.core.somaxconn=4096
     networks:
       - stack_network
 
@@ -30,8 +27,6 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - /var/pgdata:/var/lib/postgresql/data/pgdata
-    ports: 
-      - '5432:5432'
     networks:
       - stack_network
   
