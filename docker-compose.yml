@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+
+  pretix:
+    image: 'pretix/standalone:stable'
+    container_name: pretix.service
+    restart: always 
+    depends_on:
+      - db
+      - redis
+    ports:
+      - '8345:80'
+    volumes:
+      - /var/pretix-data:/data
+      - /etc/pretix:/etc/pretix
+      - /var/run/redis:/var/run/redis
+    sysctls:
+      - net.core.somaxconn=4096
+    networks:
+      - stack_network
+
+  nginx:
+    image: nginx
+    container_name: pretix.nginx
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /var/nginx:/etc/nginx/conf.d
+      - /var/certbot/conf:/etc/letsencrypt
+      - /var/certbot/www:/var/www/certbot
+    environment:
+      - NGINX_HOST=events.pocketful.info
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    networks: 
+      - web
+      - stack_network
+  
+  certbot:
+    image: certbot/certbot
+    container_name: pretix.certbot
+    restart: unless-stopped
+    volumes:
+      - /var/certbot/conf:/etc/letsencrypt
+      - /var/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - web
+      - stack_network
+
+  db:
+    image: postgres:latest
+    container_name: pretix.db
+    restart: always
+    environment:
+      - POSTGRES_USER=pretix
+      - POSTGRES_PASSWORD=pretix
+      - POSTGRES_DB=pretix
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - /var/pgdata:/var/lib/postgresql/data/pgdata
+    ports: 
+      - '5432:5432'
+    networks:
+      - stack_network
+  
+  redis:
+    image: redis:latest
+    container_name: pretix.redis
+    restart: always
+    networks:
+      - stack_network
+
+networks: 
+  web:
+    external: true
+  stack_network:
+    external: false
